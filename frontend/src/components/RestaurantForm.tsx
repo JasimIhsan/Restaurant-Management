@@ -1,13 +1,13 @@
 import type React from 'react';
 import { useState, useEffect } from 'react';
 import { z } from 'zod';
-import { type Restaurant, restaurantService } from '../api/restaurant.api.service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { X, Save } from 'lucide-react';
 import { toast } from 'sonner';
+import type { IRestaurant } from '@/types/dto/restaurant.dto.ts';
 
 // Define Zod schema for form validation
 const restaurantSchema = z.object({
@@ -17,7 +17,7 @@ const restaurantSchema = z.object({
 });
 
 interface RestaurantFormProps {
-   restaurant?: Restaurant | null;
+   restaurant?: IRestaurant | null;
    onSave: () => void;
    onCancel: () => void;
 }
@@ -72,10 +72,8 @@ export default function RestaurantForm({ restaurant, onSave, onCancel }: Restaur
          setErrors({}); // Clear errors on successful validation
 
          if (restaurant?.id) {
-            await restaurantService.updateRestaurant(restaurant.id, formData);
             toast.success('Restaurant updated successfully');
          } else {
-            await restaurantService.createRestaurant(formData);
             toast.success('Restaurant created successfully');
          }
 

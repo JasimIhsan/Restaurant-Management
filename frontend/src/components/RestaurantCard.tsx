@@ -1,12 +1,12 @@
-import type { Restaurant } from '../api/restaurant.api.service';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Edit, Trash2, MapPin, Phone } from 'lucide-react';
 import { Alert } from '@/components/custom/Alert.tsx';
+import type { IRestaurant } from '@/types/dto/restaurant.dto.ts';
 
 interface RestaurantCardProps {
-   restaurant: Restaurant;
-   onEdit: (restaurant: Restaurant) => void;
+   restaurant: IRestaurant;
+   onEdit: (restaurant: IRestaurant) => void;
    onDelete: (id: number) => void;
 }
 

@@ -76,6 +76,7 @@ This project was developed as a **24-hour machine task assignment**.
 ```bash
 git clone https://github.com/your-username/restaurant-listing-platform.git
 cd restaurant-listing-platform
+```
 
 ## 🚀 Deployment
 

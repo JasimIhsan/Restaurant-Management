@@ -24,11 +24,11 @@ app.use('/api/restaurants', restaurantRoutes);
 
 sequelize
    .sync()
-   .then(() => console.log('Database connected : ✅✅✅'))
+   .then(() => console.log('Database connected : ✅'))
    .catch((err) => console.error('❌ DB connection error:', err));
 
 app.use(errorHandler);
 
 app.listen(process.env.PORT, () => {
-   console.log('Server is running  : ✅✅✅');
+   console.log('Server is running  : ✅');
 });

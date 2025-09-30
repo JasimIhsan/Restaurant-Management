@@ -65,10 +65,10 @@ export function Home() {
       [fetchRestaurants]
    );
 
-   // Fetch restaurants on mount with URL params
+   // Fetch restaurants on mount or when currentPage changes
    useEffect(() => {
       fetchRestaurants({ page: currentPage, searchValue: search });
-   }, [currentPage, fetchRestaurants, search]); // Run only on mount
+   }, [currentPage, fetchRestaurants]);
 
    // Update URL when filters change
    useEffect(() => {
@@ -98,8 +98,8 @@ export function Home() {
    // Reset search handler
    const handleResetSearch = useCallback(async () => {
       setSearch('');
-      await fetchRestaurants({ page: 1, searchValue: '' }); // Await the promise
-   }, [fetchRestaurants]);
+      debouncedSearch(''); // Use debouncedSearch to reset
+   }, [debouncedSearch]);
 
    // Form handlers
    const handleAddRestaurant = useCallback(() => {
@@ -118,7 +118,7 @@ export function Home() {
       setShowForm(false);
       setIsEditing(false);
       setEditingRestaurant(null);
-      await fetchRestaurants({ page: currentPage, searchValue: search }); // Await the promise
+      await fetchRestaurants({ page: currentPage, searchValue: search });
    }, [currentPage, search, fetchRestaurants]);
 
    const handleFormCancel = useCallback(() => {

@@ -1,8 +1,7 @@
 import { axiosInstance } from '@/api/api.config.ts';
 import { throwApiError } from '@/utils/throw.api.error.ts';
-import type { IRestaurant } from '@/types/dto/restaurant.dto.ts';
 
-export const addRestaurant = async (restaurant: IRestaurant) => {
+export const addRestaurant = async (restaurant: { name: string; address: string; contact: string }) => {
    try {
       const response = await axiosInstance.post('/restaurants', restaurant);
       return response.data;

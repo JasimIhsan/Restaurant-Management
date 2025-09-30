@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { X, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import type { IRestaurant } from '@/types/dto/restaurant.dto.ts';
+import { addRestaurant } from '@/api/restaurant.api.service.ts';
 
 // Define Zod schema for form validation
 const restaurantSchema = z.object({
@@ -17,12 +18,14 @@ const restaurantSchema = z.object({
 });
 
 interface RestaurantFormProps {
+   isEditing: boolean;
    restaurant?: IRestaurant | null;
+   setRestaurants: (restaurants: IRestaurant[]) => void;
    onSave: () => void;
    onCancel: () => void;
 }
 
-export default function RestaurantForm({ restaurant, onSave, onCancel }: RestaurantFormProps) {
+export function RestaurantForm({ isEditing, restaurant, setRestaurants, onSave, onCancel }: RestaurantFormProps) {
    const [formData, setFormData] = useState({
       name: '',
       address: '',
@@ -31,6 +34,7 @@ export default function RestaurantForm({ restaurant, onSave, onCancel }: Restaur
    const [errors, setErrors] = useState<Partial<Record<keyof typeof formData, string>>>({});
    const [loading, setLoading] = useState(false);
 
+   // Populate form data when editing a restaurant
    useEffect(() => {
       if (restaurant) {
          setFormData({
@@ -38,7 +42,7 @@ export default function RestaurantForm({ restaurant, onSave, onCancel }: Restaur
             address: restaurant.address,
             contact: restaurant.contact,
          });
-         setErrors({}); // Clear errors when restaurant data changes
+         setErrors({});
       } else {
          setFormData({
             name: '',
@@ -54,7 +58,6 @@ export default function RestaurantForm({ restaurant, onSave, onCancel }: Restaur
 
       // Validate form data with Zod
       const result = restaurantSchema.safeParse(formData);
-
       if (!result.success) {
          const fieldErrors: Partial<Record<keyof typeof formData, string>> = {};
          result.error.issues.forEach((issue) => {
@@ -67,23 +70,36 @@ export default function RestaurantForm({ restaurant, onSave, onCancel }: Restaur
          return;
       }
 
-      try {
-         setLoading(true);
-         setErrors({}); // Clear errors on successful validation
+      if (!isEditing) {
+         await handleCreateRestaurant();
+      } else {
+         await handleUpdateRestaurant();
+      }
+   };
 
-         if (restaurant?.id) {
-            toast.success('Restaurant updated successfully');
-         } else {
+   const handleCreateRestaurant = async () => {
+      setLoading(true);
+      try {
+         const response = await addRestaurant(formData);
+         if (response.success) {
+            setRestaurants((prev: IRestaurant[]) => [...prev, response.data]);
+            onSave();
             toast.success('Restaurant created successfully');
          }
-
-         onSave();
-      } catch (err) {
-         console.error('Error saving restaurant:', err);
-         toast.error('Failed to save restaurant');
+      } catch (error) {
+         console.error(error);
       } finally {
          setLoading(false);
       }
+   };
+
+   const handleUpdateRestaurant = async () => {
+      toast.success('Restaurant updated successfully');
+      // try {
+      //    const response = await updateRestaurant(formData);
+      // } catch (error) {
+      //    console.error(error);
+      // }
    };
 
    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -93,7 +109,7 @@ export default function RestaurantForm({ restaurant, onSave, onCancel }: Restaur
          [name]: value,
       }));
 
-      // Validate field on change to provide immediate feedback
+      // Validate field on change for immediate feedback
       const fieldSchema = restaurantSchema.shape[name as keyof typeof formData];
       const result = fieldSchema.safeParse(value);
       setErrors((prev) => ({
@@ -103,7 +119,7 @@ export default function RestaurantForm({ restaurant, onSave, onCancel }: Restaur
    };
 
    return (
-      <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div className="fixed inset-0 backdrop-blur-xs flex items-center justify-center p-4 z-50">
          <Card className="w-full max-w-md bg-card border-border">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                <CardTitle className="text-xl text-foreground">{restaurant ? 'Edit Restaurant' : 'Add New Restaurant'}</CardTitle>

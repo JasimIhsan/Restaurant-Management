@@ -6,6 +6,8 @@ export interface IRestaurantAttributes {
    name: string;
    address: string;
    contact: string;
+   createdAt?: Date;
+   updatedAt?: Date;
 }
 
 export interface IRestaurant extends Model<IRestaurantAttributes>, IRestaurantAttributes {}

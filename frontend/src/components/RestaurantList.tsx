@@ -1,36 +1,15 @@
-import { useState, useEffect } from 'react';
 import RestaurantCard from './RestaurantCard';
 import { Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
 import type { IRestaurant } from '@/types/dto/restaurant.dto.ts';
-import { getRestaurants } from '@/api/restaurant.api.service.ts';
 
 interface RestaurantListProps {
+   restaurants: IRestaurant[];
+   loading: boolean;
    onEdit: (restaurant: IRestaurant) => void;
-   refreshTrigger: number;
 }
 
-export function RestaurantList({ onEdit, refreshTrigger }: RestaurantListProps) {
-   const [restaurants, setRestaurants] = useState<IRestaurant[]>([]);
-   const [loading, setLoading] = useState(true);
-
-   const fetchRestaurants = async () => {
-      try {
-         setLoading(true);
-         const data = await getRestaurants();
-         setRestaurants(data);
-      } catch (err) {
-         toast.error('Failed to fetch restaurants. Please try again.');
-         console.error('Error fetching restaurants:', err);
-      } finally {
-         setLoading(false);
-      }
-   };
-
-   useEffect(() => {
-      fetchRestaurants();
-   }, [refreshTrigger]);
-
+export function RestaurantList({ restaurants, loading, onEdit }: RestaurantListProps) {
+   console.log('Restau: ', restaurants);
    const handleDelete = async (id: number) => {
       try {
          console.log(id);
@@ -41,10 +20,6 @@ export function RestaurantList({ onEdit, refreshTrigger }: RestaurantListProps) 
          console.error('Error deleting restaurant:', err);
       }
    };
-
-   // const handleRetry = () => {
-   //    fetchRestaurants();
-   // };
 
    if (loading) {
       return (

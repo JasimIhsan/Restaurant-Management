@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,12 +10,16 @@ import { toast } from 'sonner';
 import type { IRestaurant } from '@/types/dto/restaurant.dto.ts';
 import { addRestaurant, updateRestaurant } from '@/api/restaurant.api.service.ts';
 
-// Define Zod schema for form validation
+// Zod schema
 const restaurantSchema = z.object({
-   name: z.string().min(2, 'Restaurant name must be at least 2 characters').max(100, 'Restaurant name must be less than 100 characters'),
-   address: z.string().min(5, 'Address must be at least 5 characters').max(200, 'Address must be less than 200 characters'),
-   contact: z.string().regex(/^\+?\d{7,15}$/, 'Contact must be a valid phone number (7-15 digits, optional + prefix)'),
+   name: z.string().trim().min(2, 'Restaurant name must be at least 2 characters').max(100, 'Restaurant name cannot exceed 100 characters'),
+   address: z.string().trim().min(5, 'Address must be at least 5 characters').max(200, 'Address cannot exceed 200 characters'),
+   contact: z
+      .string()
+      .trim()
+      .regex(/^(\+?\d{1,3})?\d{10}$/, 'Contact must be exactly 10 digits, optionally with country code (e.g., +911234567890 or 1234567890)'),
 });
+type FormData = z.infer<typeof restaurantSchema>;
 
 interface RestaurantFormProps {
    isEditing: boolean;
@@ -26,44 +30,52 @@ interface RestaurantFormProps {
 }
 
 export function RestaurantForm({ isEditing, restaurant, setRestaurants, onSave, onCancel }: RestaurantFormProps) {
-   const [formData, setFormData] = useState({
-      name: '',
-      address: '',
-      contact: '',
-   });
-   const [errors, setErrors] = useState<Partial<Record<keyof typeof formData, string>>>({});
+   const [formData, setFormData] = useState<FormData>({ name: '', address: '', contact: '' });
+   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
    const [loading, setLoading] = useState(false);
 
-   // Populate form data only when editing and restaurant exists
+   // Populate form when editing
    useEffect(() => {
       if (isEditing && restaurant) {
-         setFormData({
-            name: restaurant.name,
-            address: restaurant.address,
-            contact: restaurant.contact,
-         });
-         setErrors({});
+         setFormData({ name: restaurant.name, address: restaurant.address, contact: restaurant.contact });
       } else {
-         setFormData({
-            name: '',
-            address: '',
-            contact: '',
-         });
-         setErrors({});
+         setFormData({ name: '', address: '', contact: '' });
       }
+      setErrors({});
    }, [isEditing, restaurant]);
 
+   // Handle input changes
+   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+      const { name, value } = e.target;
+      setFormData((prev) => ({ ...prev, [name]: value }));
+
+      // Real-time single-field validation
+      const fieldSchema = restaurantSchema.shape[name as keyof FormData];
+      const result = fieldSchema.safeParse(value);
+      setErrors((prev) => ({
+         ...prev,
+         [name]: result.success ? undefined : result.error.issues[0]?.message,
+      }));
+   }, []);
+
+   // Check form validity
+   const isFormValid = () => restaurantSchema.safeParse(formData).success;
+
+   // Unified submit handler
    const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
 
-      // Validate form data with Zod
-      const result = restaurantSchema.safeParse(formData);
+      const trimmedData = {
+         name: formData.name.trim(),
+         address: formData.address.trim(),
+         contact: formData.contact.trim(),
+      };
+
+      const result = restaurantSchema.safeParse(trimmedData);
       if (!result.success) {
-         const fieldErrors: Partial<Record<keyof typeof formData, string>> = {};
+         const fieldErrors: Partial<Record<keyof FormData, string>> = {};
          result.error.issues.forEach((issue) => {
-            if (issue.path[0]) {
-               fieldErrors[issue.path[0] as keyof typeof formData] = issue.message;
-            }
+            if (issue.path[0]) fieldErrors[issue.path[0] as keyof FormData] = issue.message;
          });
          setErrors(fieldErrors);
          toast.error('Please fix the form errors');
@@ -71,64 +83,29 @@ export function RestaurantForm({ isEditing, restaurant, setRestaurants, onSave, 
       }
 
       setLoading(true);
-      if (isEditing && restaurant) {
-         await handleUpdateRestaurant();
-      } else {
-         await handleCreateRestaurant();
-      }
-      setLoading(false);
-   };
-
-   const handleCreateRestaurant = async () => {
       try {
-         const response = await addRestaurant(formData);
+         const response = isEditing && restaurant?.id ? await updateRestaurant(restaurant.id, trimmedData) : await addRestaurant(trimmedData);
+
          if (response.success) {
-            setRestaurants((prev) => [...prev, response.data]);
-            toast.success('Restaurant created successfully');
+            setRestaurants((prev) => (isEditing ? prev.map((r) => (r.id === restaurant?.id ? { ...r, ...trimmedData } : r)) : [...prev, response.data]));
+            toast.success(`Restaurant ${isEditing ? 'updated' : 'created'} successfully`);
             onSave();
          } else {
-            toast.error('Failed to create restaurant');
+            toast.error(`Failed to ${isEditing ? 'update' : 'create'} restaurant`);
          }
       } catch (error) {
-         console.error('Error creating restaurant:', error);
-         toast.error('An error occurred while creating the restaurant');
+         console.error(error);
+         if (error instanceof Error) toast.error(error.message);
+         else toast.error('Something went wrong. Please try again.');
+      } finally {
+         setLoading(false);
       }
    };
 
-   const handleUpdateRestaurant = async () => {
-      try {
-         if (!restaurant?.id) {
-            console.error('No restaurant ID∑ provided for update');
-            return;
-         }
-         const response = await updateRestaurant(restaurant.id, formData);
-         if (response.success) {
-            setRestaurants((prev) => prev.map((r) => (r.id === restaurant.id ? { ...r, ...formData } : r)));
-            toast.success('Restaurant updated successfully');
-            onSave();
-         } else {
-            toast.error('Failed to update restaurant');
-         }
-      } catch (error) {
-         console.error('Error updating restaurant:', error);
-         toast.error('An error occurred while updating the restaurant');
-      }
-   };
-
-   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const { name, value } = e.target;
-      setFormData((prev) => ({
-         ...prev,
-         [name]: value,
-      }));
-
-      // Validate field on change for immediate feedback
-      const fieldSchema = restaurantSchema.shape[name as keyof typeof formData];
-      const result = fieldSchema.safeParse(value);
-      setErrors((prev) => ({
-         ...prev,
-         [name]: result.success ? undefined : result.error.issues[0]?.message,
-      }));
+   const handleCancel = () => {
+      setFormData({ name: '', address: '', contact: '' });
+      setErrors({});
+      onCancel();
    };
 
    return (
@@ -136,42 +113,27 @@ export function RestaurantForm({ isEditing, restaurant, setRestaurants, onSave, 
          <Card className="w-full max-w-md bg-card border-border">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                <CardTitle className="text-xl text-foreground">{isEditing ? 'Edit Restaurant' : 'Add New Restaurant'}</CardTitle>
-               <Button variant="ghost" size="sm" onClick={onCancel} className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
+               <Button variant="ghost" size="sm" onClick={handleCancel} className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
                   <X className="h-4 w-4" />
                </Button>
             </CardHeader>
             <CardContent>
                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                     <Label htmlFor="name" className="text-foreground">
-                        Restaurant Name
-                     </Label>
-                     <Input id="name" name="name" type="text" value={formData.name} onChange={handleChange} placeholder="Enter restaurant name" className={`bg-input border-border text-foreground ${errors.name ? 'border-destructive' : ''}`} required />
-                     {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
-                  </div>
-
-                  <div className="space-y-2">
-                     <Label htmlFor="address" className="text-foreground">
-                        Address
-                     </Label>
-                     <Input id="address" name="address" type="text" value={formData.address} onChange={handleChange} placeholder="Enter restaurant address" className={`bg-input border-border text-foreground ${errors.address ? 'border-destructive' : ''}`} required />
-                     {errors.address && <p className="text-sm text-destructive">{errors.address}</p>}
-                  </div>
-
-                  <div className="space-y-2">
-                     <Label htmlFor="contact" className="text-foreground">
-                        Contact
-                     </Label>
-                     <Input id="contact" name="contact" type="text" value={formData.contact} onChange={handleChange} placeholder="Enter contact information (e.g., +1234567890)" className={`bg-input border-border text-foreground ${errors.contact ? 'border-destructive' : ''}`} required />
-                     {errors.contact && <p className="text-sm text-destructive">{errors.contact}</p>}
-                  </div>
+                  {(['name', 'address', 'contact'] as (keyof FormData)[]).map((field) => (
+                     <div key={field} className="space-y-2">
+                        <Label htmlFor={field} className="text-foreground capitalize">
+                           {field}
+                        </Label>
+                        <Input id={field} name={field} type="text" value={formData[field]} onChange={handleChange} placeholder={`Enter ${field}`} className={`bg-input border-border text-foreground ${errors[field] ? 'border-destructive' : ''}`} required />
+                        {errors[field] && <p className="text-sm text-destructive">{errors[field]}</p>}
+                     </div>
+                  ))}
 
                   <div className="flex gap-3 pt-4">
-                     <Button type="submit" disabled={loading} className="flex-1 flex items-center gap-2">
-                        <Save className="h-4 w-4" />
-                        {loading ? 'Saving...' : 'Save Restaurant'}
+                     <Button type="submit" disabled={loading || !isFormValid()} className="flex-1 flex items-center gap-2">
+                        <Save className="h-4 w-4" /> {loading ? 'Saving...' : 'Save Restaurant'}
                      </Button>
-                     <Button type="button" variant="outline" onClick={onCancel} disabled={loading} className="flex-1 bg-transparent">
+                     <Button type="button" variant="outline" onClick={handleCancel} disabled={loading} className="flex-1 bg-transparent">
                         Cancel
                      </Button>
                   </div>

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { debounce } from 'lodash';
 import { Navbar } from '@/components/Navbar.tsx';
@@ -9,7 +9,8 @@ import { getRestaurants } from '@/api/restaurant.api.service.ts';
 import { toast } from 'sonner';
 import { PaginationControls } from '@/components/custom/PaginationControls.tsx';
 import { Input } from '@/components/ui/input.tsx';
-import { X } from 'lucide-react'; // Import X icon from lucide-react
+import { RefreshCcw, X } from 'lucide-react';
+import { Button } from '@/components/ui/button.tsx';
 
 // Define constants
 const ITEMS_PER_PAGE = 6;
@@ -22,48 +23,38 @@ interface FetchRestaurantsParams {
 }
 
 export function Home() {
+   // Manage URL query parameters
+   const [searchParams, setSearchParams] = useSearchParams();
+
+   // Initialize state from URL
    const [restaurants, setRestaurants] = useState<IRestaurant[]>([]);
    const [loading, setLoading] = useState<boolean>(false);
    const [showForm, setShowForm] = useState<boolean>(false);
    const [editingRestaurant, setEditingRestaurant] = useState<IRestaurant | null>(null);
    const [isEditing, setIsEditing] = useState<boolean>(false);
-   const [search, setSearch] = useState<string>('');
-   const [currentPage, setCurrentPage] = useState<number>(1);
+   const [search, setSearch] = useState<string>(searchParams.get('search') || '');
+   const [currentPage, setCurrentPage] = useState<number>(parseInt(searchParams.get('page') || '1'));
    const [totalCount, setTotalCount] = useState<number>(0);
-   const [searchParams, setSearchParams] = useSearchParams();
-
-   // Load URL params on mount
-   useEffect(() => {
-      const pageFromUrl = parseInt(searchParams.get('page') || '1', 10);
-      const searchFromUrl = searchParams.get('search') || '';
-      setCurrentPage(Number.isNaN(pageFromUrl) ? 1 : pageFromUrl);
-      setSearch(searchFromUrl);
-      fetchRestaurants({ page: pageFromUrl, searchValue: searchFromUrl });
-   }, []); // Empty dependency array as this runs only on mount
 
    // Fetch restaurants with error handling
-   const fetchRestaurants = useCallback(
-      async ({ page, searchValue }: FetchRestaurantsParams) => {
-         try {
-            setLoading(true);
-            const response = await getRestaurants(page, ITEMS_PER_PAGE, searchValue.trim());
-            if (response.success) {
-               setRestaurants(response.data.restaurants || []);
-               setTotalCount(response.data.count || 0);
-               setCurrentPage(page);
-               setSearchParams({ page: page.toString(), search: searchValue });
-            }
-         } catch (err) {
-            toast.error('Failed to fetch restaurants. Please try again later.');
-            console.error('Error fetching restaurants:', err);
-            setRestaurants([]);
-            setTotalCount(0);
-         } finally {
-            setLoading(false);
+   const fetchRestaurants = useCallback(async ({ page, searchValue }: FetchRestaurantsParams) => {
+      try {
+         setLoading(true);
+         const response = await getRestaurants(page, ITEMS_PER_PAGE, searchValue.trim());
+         if (response.success) {
+            setRestaurants(response.data.restaurants || []);
+            setTotalCount(response.data.count || 0);
+            setCurrentPage(page);
          }
-      },
-      [setSearchParams]
-   );
+      } catch (err) {
+         toast.error('Failed to fetch restaurants. Please try again later.');
+         console.error('Error fetching restaurants:', err);
+         setRestaurants([]);
+         setTotalCount(0);
+      } finally {
+         setLoading(false);
+      }
+   }, []);
 
    // Debounced search handler
    const debouncedSearch = useMemo(
@@ -73,6 +64,19 @@ export function Home() {
          }, DEBOUNCE_DELAY),
       [fetchRestaurants]
    );
+
+   // Fetch restaurants on mount with URL params
+   useEffect(() => {
+      fetchRestaurants({ page: currentPage, searchValue: search });
+   }, [currentPage, fetchRestaurants, search]); // Run only on mount
+
+   // Update URL when filters change
+   useEffect(() => {
+      const params = new URLSearchParams();
+      if (search) params.set('search', search);
+      if (currentPage !== 1) params.set('page', currentPage.toString());
+      setSearchParams(params, { replace: true });
+   }, [search, currentPage, setSearchParams]);
 
    // Cleanup debounce on unmount
    useEffect(() => {
@@ -92,9 +96,9 @@ export function Home() {
    );
 
    // Reset search handler
-   const handleResetSearch = useCallback(() => {
+   const handleResetSearch = useCallback(async () => {
       setSearch('');
-      fetchRestaurants({ page: 1, searchValue: '' });
+      await fetchRestaurants({ page: 1, searchValue: '' }); // Await the promise
    }, [fetchRestaurants]);
 
    // Form handlers
@@ -110,11 +114,11 @@ export function Home() {
       setShowForm(true);
    }, []);
 
-   const handleFormSave = useCallback(() => {
+   const handleFormSave = useCallback(async () => {
       setShowForm(false);
       setIsEditing(false);
       setEditingRestaurant(null);
-      fetchRestaurants({ page: currentPage, searchValue: search });
+      await fetchRestaurants({ page: currentPage, searchValue: search }); // Await the promise
    }, [currentPage, search, fetchRestaurants]);
 
    const handleFormCancel = useCallback(() => {
@@ -144,28 +148,29 @@ export function Home() {
             </div>
 
             <div className="relative w-full mb-4">
-               <Input id="search" type="text" value={search} onChange={handleSearchChange} placeholder="Search restaurants..." className="w-full pr-10 border p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" aria-label="Search restaurants" />
-               {search && (
-                  <button onClick={handleResetSearch} className="absolute right-2 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground" aria-label="Clear search">
-                     <X className="h-5 w-5" />
-                  </button>
-               )}
+               <div className="flex gap-2">
+                  <Input id="search" type="text" value={search} onChange={handleSearchChange} placeholder="Search restaurants..." className="w-full pr-10 border p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" aria-label="Search restaurants" />
+                  {search && (
+                     <button onClick={handleResetSearch} className="absolute right-15 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground" aria-label="Clear search">
+                        <X className="h-5 w-5" />
+                     </button>
+                  )}
+                  <Button onClick={() => fetchRestaurants({ page: currentPage, searchValue: search })}>
+                     <RefreshCcw className="h-5 w-5" />
+                  </Button>
+               </div>
             </div>
-
             {loading && (
                <div className="text-center py-4">
                   <p className="text-muted-foreground">Loading restaurants...</p>
                </div>
             )}
-
             {!loading && restaurants.length === 0 && (
                <div className="text-center py-4">
                   <p className="text-muted-foreground">No restaurants found.</p>
                </div>
             )}
-
             <RestaurantList onEdit={handleEditRestaurant} restaurants={restaurants} loading={loading} setRestaurants={setRestaurants} />
-
             {totalPages > 1 && <PaginationControls className="mt-8" currentPage={currentPage} totalPages={totalPages} onPageChange={(page) => fetchRestaurants({ page, searchValue: search })} />}
          </main>
 

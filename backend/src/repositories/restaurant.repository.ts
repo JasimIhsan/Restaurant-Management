@@ -19,7 +19,10 @@ export class RestaurantRepositoryImpl implements IRestaurantRepository {
 
       const result = await Restaurant.findAndCountAll({
          where: whereCondition,
-         order: [['createdAt', 'DESC'], ["id", "ASC"]],
+         order: [
+            ['createdAt', 'DESC'],
+            ['id', 'ASC'],
+         ],
          limit,
          offset,
       });
@@ -37,5 +40,9 @@ export class RestaurantRepositoryImpl implements IRestaurantRepository {
    async update(id: number, data: { name: string; address: string; contact: string }): Promise<IRestaurant | null> {
       await Restaurant.update(data, { where: { id } });
       return await Restaurant.findByPk(id);
+   }
+
+   async isAlreadyExist(name: string, address: string, contact: string): Promise<IRestaurant | null> {
+      return await Restaurant.findOne({ where: { name, address, contact } });
    }
 }

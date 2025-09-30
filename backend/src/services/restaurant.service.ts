@@ -9,6 +9,9 @@ export class RestaurantService implements IRestaurantService {
       if (!data.name || !data.address || !data.contact) {
          throw new Error('All fields are required');
       }
+      const isExist = await this.restaurantRepository.isAlreadyExist(data.name, data.address, data.contact);
+      if (isExist) throw new Error('Restaurant already exists');
+
       const restaurant = await this.restaurantRepository.create(data);
       return mapToRestaurantDto(restaurant);
    };

@@ -5,6 +5,7 @@ import { restaurantRoutes } from './routes/restaurant.routes';
 import morgan from 'morgan';
 import cors from 'cors';
 import { errorHandler } from './middlewares/error.handling.middleware';
+import { env } from './config/env.config';
 
 dotenv.config();
 const app = express();
@@ -14,7 +15,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(
    cors({
-      origin: [process.env.FRONTEND_URL as string, process.env.FRONTEND_URL_DEV as string],
+      origin: [env.frontendUrl, env.frontendUrlDev],
    })
 );
 
@@ -29,6 +30,6 @@ sequelize
 
 app.use(errorHandler);
 
-app.listen(process.env.PORT, () => {
+app.listen(env.port, () => {
    console.log('Server is running  : ✅');
 });

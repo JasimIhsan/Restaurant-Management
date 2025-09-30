@@ -18,3 +18,21 @@ export const getRestaurants = async () => {
       throwApiError(error);
    }
 };
+
+export const updateRestaurant = async (id: number, restaurant: { name: string; address: string; contact: string }) => {
+   try {
+      const response = await axiosInstance.put(`/restaurants/${id}`, restaurant);
+      return response.data;
+   } catch (error) {
+      throwApiError(error);
+   }
+};
+
+export const deleteRestaurant = async (id: number) => {
+   try {
+      const response = await axiosInstance.delete(`/restaurants/${id}`);
+      return response.data;
+   } catch (error) {
+      throwApiError(error);
+   }
+};

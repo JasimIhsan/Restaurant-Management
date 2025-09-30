@@ -67,7 +67,7 @@ export function Home() {
                <p className="text-muted-foreground">Manage your restaurant locations and contact information</p>
             </div>
 
-            <RestaurantList onEdit={handleEditRestaurant} restaurants={restaurants} loading={loading} />
+            <RestaurantList onEdit={handleEditRestaurant} restaurants={restaurants} loading={loading} setRestaurants={setRestaurants} />
          </main>
 
          {showForm && <RestaurantForm isEditing={isEditing} restaurant={editingRestaurant} setRestaurants={setRestaurants} onSave={handleFormSave} onCancel={handleFormCancel} />}

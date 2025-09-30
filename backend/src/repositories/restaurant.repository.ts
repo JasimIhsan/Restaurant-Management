@@ -7,7 +7,7 @@ export class RestaurantRepositoryImpl implements IRestaurantRepository {
    }
 
    async findAll(): Promise<IRestaurant[]> {
-      return await Restaurant.findAll();
+      return await Restaurant.findAll({ order: [['createdAt', 'ASC']] });
    }
 
    async delete(id: number): Promise<number> {

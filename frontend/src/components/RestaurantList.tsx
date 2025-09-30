@@ -1,23 +1,34 @@
-import RestaurantCard from './RestaurantCard';
+import { RestaurantCard } from './RestaurantCard';
 import { Loader2 } from 'lucide-react';
 import type { IRestaurant } from '@/types/dto/restaurant.dto.ts';
+import { deleteRestaurant } from '@/api/restaurant.api.service.ts';
+import { toast } from 'sonner';
+import React from 'react';
 
 interface RestaurantListProps {
    restaurants: IRestaurant[];
+   setRestaurants: React.Dispatch<React.SetStateAction<IRestaurant[]>>;
    loading: boolean;
    onEdit: (restaurant: IRestaurant) => void;
 }
 
-export function RestaurantList({ restaurants, loading, onEdit }: RestaurantListProps) {
-   console.log('Restau: ', restaurants);
-   const handleDelete = async (id: number) => {
-      try {
-         console.log(id);
+export function RestaurantList({ restaurants, loading, onEdit, setRestaurants }: RestaurantListProps) {
+   const [loadingDelete, setLoadingDelete] = React.useState(false);
 
-         // await restaurantService.deleteRestaurant(id);
-         // setRestaurants(restaurants.filter((restaurant) => restaurant.id !== id));
+   const handleDelete = async (id: number) => {
+      setLoadingDelete(true);
+      try {
+         const response = await deleteRestaurant(id);
+         if (response.success) {
+            setRestaurants(restaurants.filter((restaurant) => restaurant.id !== id));
+            toast.success('Restaurant deleted successfully');
+         }
       } catch (err) {
+         if (err instanceof Error) toast.error(err.message);
+         else toast.error('Failed to delete restaurant. Please try again.');
          console.error('Error deleting restaurant:', err);
+      } finally {
+         setLoadingDelete(false);
       }
    };
 
@@ -42,7 +53,7 @@ export function RestaurantList({ restaurants, loading, onEdit }: RestaurantListP
    return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
          {restaurants.map((restaurant) => (
-            <RestaurantCard key={restaurant.id} restaurant={restaurant} onEdit={onEdit} onDelete={handleDelete} />
+            <RestaurantCard key={restaurant.id} restaurant={restaurant} onEdit={onEdit} onDelete={handleDelete} isLoadingDelete={loadingDelete} />
          ))}
       </div>
    );

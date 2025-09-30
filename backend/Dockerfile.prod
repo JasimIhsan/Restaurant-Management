@@ -3,27 +3,29 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files and install dependencies
+# Copy package files and install ALL dependencies (including dev)
 COPY package*.json ./
-RUN npm install --production   # only production deps
+RUN npm install       # install dev + prod deps
 
 # Copy source code
 COPY . .
 
-# If using TypeScript, build the JS
+# Build TypeScript
 RUN npm run build
 
-# Stage 2: Production image
+# Stage 2: Production
 FROM node:22-alpine
 
 WORKDIR /app
 
-# Copy only built JS and package.json
+# Copy only package.json (for prod deps) and built JS
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
+
+# Install only production dependencies
+RUN npm install --production
 
 EXPOSE 5002
 
-# Run the built JS code
+# Run the built JS
 CMD ["node", "dist/server.js"]

@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import type { Restaurant } from '@/api/restaurant.api.service.ts';
 import Navbar from '@/components/Navbar.tsx';
 import { RestaurantList } from '@/components/ResturantList.tsx';
 import RestaurantForm from '@/components/RestaurantForm.tsx';
+import type { IRestaurant } from '@/types/dto/restaurant.dto.ts';
 
 export function Home() {
    const [showForm, setShowForm] = useState(false);
-   const [editingRestaurant, setEditingRestaurant] = useState<Restaurant | null>(null);
+   const [editingRestaurant, setEditingRestaurant] = useState<IRestaurant | null>(null);
    const [refreshTrigger, setRefreshTrigger] = useState(0);
 
    const handleAddRestaurant = () => {
@@ -14,7 +14,7 @@ export function Home() {
       setShowForm(true);
    };
 
-   const handleEditRestaurant = (restaurant: Restaurant) => {
+   const handleEditRestaurant = (restaurant: IRestaurant) => {
       setEditingRestaurant(restaurant);
       setShowForm(true);
    };

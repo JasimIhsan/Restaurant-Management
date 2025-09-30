@@ -1,0 +1,43 @@
+name: Deploy Backend with Docker
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "backend/**" # Only run if backend folder has changes
+      - ".github/workflows/deploy-backend.yml" # Run if this workflow file changes
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Build and push Docker image to DockerHub
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Build and Push Docker Image
+        run: |
+          IMAGE_NAME=${{ secrets.DOCKER_HUB_USERNAME }}/restaurant-backend
+          docker compose -f docker-compose.prod.yml build
+          docker compose -f docker-compose.prod.yml push
+        working-directory: ./backend
+
+      # SSH into EC2 and deploy
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            IMAGE_NAME=${{ secrets.DOCKER_HUB_USERNAME }}/restaurant-backend
+            docker compose pull
+            docker compose down
+            docker compose up -d

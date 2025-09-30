@@ -19,7 +19,7 @@ export class RestaurantRepositoryImpl implements IRestaurantRepository {
 
       const result = await Restaurant.findAndCountAll({
          where: whereCondition,
-         order: [['createdAt', 'DESC']],
+         order: [['createdAt', 'DESC'], ["id", "ASC"]],
          limit,
          offset,
       });

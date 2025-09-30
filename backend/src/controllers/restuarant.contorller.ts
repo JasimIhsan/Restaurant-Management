@@ -16,8 +16,9 @@ export class RestaurantController {
 
    getAll = async (req: Request, res: Response, next: NextFunction) => {
       try {
-         const restaurants = await this.restaurantService.getAll();
-         res.status(StatusCodes.OK).json({ success: true, data: restaurants });
+         const { page, limit, search } = req.query;
+         const { restaurants, count } = await this.restaurantService.getAll({ page: Number(page), limit: Number(limit), search: String(search) });
+         res.status(StatusCodes.OK).json({ success: true, data: { restaurants, count } });
       } catch (error) {
          next(error);
       }

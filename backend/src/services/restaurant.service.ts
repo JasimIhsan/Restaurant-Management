@@ -13,9 +13,9 @@ export class RestaurantService implements IRestaurantService {
       return mapToRestaurantDto(restaurant);
    };
 
-   getAll = async (): Promise<IRestaurantDto[]> => {
-      const restaurants = await this.restaurantRepository.findAll();
-      return restaurants.map(mapToRestaurantDto);
+   getAll = async ({ page, limit, search }: { page?: number; limit?: number; search?: string }): Promise<{ restaurants: IRestaurantDto[]; count: number }> => {
+      const { rows, count } = await this.restaurantRepository.findAll(page, limit, search);
+      return { restaurants: rows.map(mapToRestaurantDto), count };
    };
 
    update = async (id: number, data: { name: string; address: string; contact: string }): Promise<IRestaurantDto> => {

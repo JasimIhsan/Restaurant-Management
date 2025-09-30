@@ -10,14 +10,16 @@ export const addRestaurant = async (restaurant: { name: string; address: string;
    }
 };
 
-export const getRestaurants = async () => {
+export async function getRestaurants(page = 1, limit = 6, search = '') {
    try {
-      const response = await axiosInstance.get('/restaurants');
-      return response.data;
-   } catch (error) {
-      throwApiError(error);
+      const res = await axiosInstance.get(`/restaurants`, {
+         params: { page, limit, search },
+      });
+      return res.data;
+   } catch (err) {
+      return { success: false, data: [], count: 0 };
    }
-};
+}
 
 export const updateRestaurant = async (id: number, restaurant: { name: string; address: string; contact: string }) => {
    try {

@@ -4,6 +4,7 @@ import { sequelize } from './config/database.config';
 import { restaurantRoutes } from './routes/restaurant.routes';
 import morgan from 'morgan';
 import cors from 'cors';
+import { errorHandler } from './middlewares/error.handling.middleware';
 
 dotenv.config();
 const app = express();
@@ -25,6 +26,8 @@ sequelize
    .sync()
    .then(() => console.log('Database connected : ✅✅✅'))
    .catch((err) => console.error('❌ DB connection error:', err));
+
+app.use(errorHandler);
 
 app.listen(process.env.PORT, () => {
    console.log('Server is running  : ✅✅✅');

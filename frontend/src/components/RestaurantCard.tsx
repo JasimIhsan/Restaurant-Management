@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Edit, Trash2, MapPin, Phone } from 'lucide-react';
+import { Edit, Trash2, MapPin, Phone, Loader2 } from 'lucide-react';
 import { Alert } from '@/components/custom/Alert.tsx';
 import type { IRestaurant } from '@/types/dto/restaurant.dto.ts';
 
@@ -8,13 +8,10 @@ interface RestaurantCardProps {
    restaurant: IRestaurant;
    onEdit: (restaurant: IRestaurant) => void;
    onDelete: (id: number) => void;
+   isLoadingDelete: boolean;
 }
 
-export default function RestaurantCard({ restaurant, onEdit, onDelete }: RestaurantCardProps) {
-   const handleDelete = () => {
-      onDelete(restaurant.id!);
-   };
-
+export function RestaurantCard({ restaurant, onEdit, onDelete, isLoadingDelete }: RestaurantCardProps) {
    return (
       <Card className="bg-card border-border hover:bg-accent/50 transition-colors">
          <CardHeader className="pb-3">
@@ -25,17 +22,23 @@ export default function RestaurantCard({ restaurant, onEdit, onDelete }: Restaur
                      <Edit className="h-4 w-4" />
                   </Button>
 
-                  <Alert
-                     triggerElement={
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive">
-                           <Trash2 className="h-4 w-4" />
-                        </Button>
-                     }
-                     contentTitle="Delete Restaurant"
-                     contentDescription="Are you sure you want to delete this restaurant?"
-                     actionText="Delete"
-                     onConfirm={handleDelete}
-                  />
+                  {isLoadingDelete ? (
+                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                     </Button>
+                  ) : (
+                     <Alert
+                        triggerElement={
+                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive">
+                              <Trash2 className="h-4 w-4" />
+                           </Button>
+                        }
+                        contentTitle="Delete Restaurant"
+                        contentDescription="Are you sure you want to delete this restaurant?"
+                        actionText="Delete"
+                        onConfirm={() => onDelete(restaurant.id)}
+                     />
+                  )}
                </div>
             </CardTitle>
          </CardHeader>

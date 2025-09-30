@@ -100,5 +100,5 @@ cd restaurant-listing-platform
 ## 👨‍💻 Author
 
 - **Jasim Ihsan M**
-- GitHub: [@your-username](https://github.com/JasimIhsan)
+- GitHub: [@JasimIhsan](https://github.com/JasimIhsan)
 - Email: jasimihsan1234@gmail.com

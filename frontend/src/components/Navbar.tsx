@@ -18,7 +18,8 @@ export function Navbar({ onAddRestaurant }: NavbarProps) {
 
                <Button onClick={onAddRestaurant} className="flex items-center gap-2">
                   <Plus className="h-4 w-4" />
-                  Add Restaurant
+                  <span className="hidden sm:inline">Add Restaurant</span>
+                  <span className="inline sm:hidden">Add</span>
                </Button>
             </div>
          </div>

@@ -24,7 +24,7 @@ app.use(morgan('dev'));
 app.use('/api/restaurants', restaurantRoutes);
 
 sequelize
-   .sync()
+   .sync({ alter: true })
    .then(() => console.log('Database connected : ✅'))
    .catch((err) => console.error('❌ DB connection error:', err));
 
